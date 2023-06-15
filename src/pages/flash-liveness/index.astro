@@ -1,0 +1,319 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout title="Flash Liveness">
+    <h2>Flash Liveness detection</h2>
+    <h3>Build Version: 15th Jun, 2023 - 10:20 PM</h3>
+    <div id="container"></div>
+
+    <main id="content">
+        <hr />
+        <h4>Face liveness with color</h4>
+
+        <div
+            style="display: grid; grid-gap: 12px; grid-template-columns: 1fr 1fr"
+        >
+            <fieldset>
+                <legend>Frame settings</legend>
+
+                <label for="frame-interval">Frame Interval (ms):</label>
+                <input id="frame-interval" value="0" type="number" min="0" />
+                <br />
+            </fieldset>
+
+            <fieldset>
+                <legend>Flash settings</legend>
+
+                <label for="colors"
+                    >Colors (Only accepts 'r', 'g', 'b', ' ' characters):
+                </label>
+                <input id="colors" value="r r r r r " />
+                <br />
+
+                <label for="frame-per-color">Frame per Color:</label>
+                <input id="frame-per-color" value="4" type="number" min="1" />
+                <br />
+
+                <label
+                    for="color-delay"
+                    class="tooltip"
+                    data-tooltip="Delay khi thay đổi màu flash"
+                    >Delay between colors (ms):
+                </label>
+                <input id="color-delay" value="120" type="number" min="0" />
+                <br />
+
+                <label for="use-face-dectector"
+                    >Use Face Dectecto{">"}gt; when flashing:</label
+                >
+                <input id="use-face-dectector" type="checkbox" />
+                <br />
+
+                <label for="flash-intensity"
+                    >Flash intensity (0 {"->"} 1):</label
+                >
+                <input
+                    id="flash-intensity"
+                    value="0.6"
+                    type="number"
+                    min="0"
+                    max="1"
+                    style="width: 40px"
+                    step="0.1"
+                />
+                <br />
+            </fieldset>
+
+            <fieldset>
+                <legend>Face settings</legend>
+
+                <label
+                    for="min-far-face-ratio"
+                    class="tooltip"
+                    data-tooltip="Ratio nhỏ nhất để xác định khuôn mặt ở xa nhưng không quá xa"
+                    >Min far face ratio:
+                </label>
+                <input
+                    id="min-far-face-ratio"
+                    value="0.55"
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                />
+                <br />
+
+                <label
+                    for="max-far-face-ratio"
+                    class="tooltip"
+                    data-tooltip="Ratio lớn nhất để xác định khuôn mặt ở xa nhưng không quá gần"
+                    >Max far face ratio:
+                </label>
+                <input
+                    id="max-far-face-ratio"
+                    value="0.6"
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                />
+                <br />
+
+                <label
+                    for="close-face-ratio"
+                    class="tooltip"
+                    data-tooltip="Ratio nhỏ nhất để xác định khuôn mặt ở vừa đủ gần để flash"
+                    >Close face ratio:
+                </label>
+                <input
+                    id="close-face-ratio"
+                    value="0.75"
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                />
+            </fieldset>
+
+            <fieldset>
+                <legend>Mask settings</legend>
+
+                <label
+                    for="small-scale"
+                    class="tooltip"
+                    data-tooltip="Scale của camera mask lúc thu nhỏ"
+                    >Small scale:
+                </label>
+                <input
+                    id="small-scale"
+                    value="0.55"
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                />
+                <br />
+
+                <label
+                    for="large-scale"
+                    class="tooltip"
+                    data-tooltip="Scale của camera mask lúc phóng lớn"
+                    >Large scale:
+                </label>
+                <input
+                    id="large-scale"
+                    value="0.8"
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                />
+            </fieldset>
+        </div>
+
+        <br />
+        <div style="display: flex;justify-content: center;">
+            <button class="start-button"> Start</button>
+        </div>
+
+        <div id="result"></div>
+    </main>
+</Layout>
+
+<style>
+    #result {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        flex-direction: row;
+        justify-self: center;
+        margin-block-start: 12px;
+    }
+
+    input {
+        margin-block-end: 4px;
+    }
+
+    .start-button {
+        padding: 10px 12px;
+        outline: 0;
+        border: 0;
+        background: black;
+        color: #fff;
+        cursor: pointer;
+        border-radius: 4px;
+        width: 100px;
+    }
+
+    .start-button:hover {
+        background: #000000a6;
+    }
+
+    .tooltip {
+        position: relative;
+        display: inline-block;
+        border-bottom: 1px dotted black;
+    }
+
+    .tooltip::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        background-color: #1677ff;
+        color: #fff;
+        padding: 3px 6px;
+        border-radius: 3px;
+        width: 150px;
+        white-space: normal;
+        font-size: 14px;
+        display: none;
+    }
+
+    .tooltip:hover::after {
+        display: block;
+    }
+
+    legend {
+        background-color: #000;
+        color: #fff;
+        padding: 3px 6px;
+    }
+</style>
+
+<script>
+    import "././tvweb-sdk.standalone.min.js";
+
+    // @ts-ignore
+    const tv = new TVWebSDK.SDK({
+        container: document.getElementById("container"),
+        lang: "vi",
+        assetRoot: "./",
+        // assetRoot: "/assets",
+        enableAntiDebug: false,
+    });
+    window.tv = tv;
+    tv.runPreloadEKYCResources();
+
+    // prettier-ignore
+    function startFaceAuthen() {
+        // Frame settings
+        const frameInterval = (document.getElementById("frame-interval") as HTMLInputElement)?.value ?? '0';
+
+        // Flash settings
+        const framePerColor = (document.getElementById("frame-per-color")as HTMLInputElement)?.value;
+        const colors = (document.getElementById("colors")as HTMLInputElement)?.value;
+        const colorDelay = (document.getElementById("color-delay")as HTMLInputElement)?.value;
+        const useFaceDetector = (document.getElementById("use-face-dectector")as HTMLInputElement)?.checked;
+        const flashIntensity = (document.getElementById("flash-intensity")as HTMLInputElement)?.value;
+
+        // Face settings
+        const minFarFaceRatio =(document.getElementById("min-far-face-ratio")as HTMLInputElement)?.value;
+        const maxFarFaceRatio = (document.getElementById("max-far-face-ratio")as HTMLInputElement)?.value;
+        const closeFaceRatio = (document.getElementById("close-face-ratio")as HTMLInputElement)?.value;
+
+        // Mask settings
+        const smallScale = (document.getElementById("small-scale")as HTMLInputElement)?.value;
+        const largeScale = (document.getElementById("large-scale")as HTMLInputElement)?.value;
+
+        const form = document.getElementById("content")!;
+        form.style.display = "none";
+
+        tv.flashLiveness({
+            // apiCredentials: {
+            //     accessKey: inputAccessKey.value,
+            //     secretKey: inputSecretKey.value,
+            //     apiUrl: inputApiUrl.value,
+            // },
+            onDone: () => {
+                tv.destroyView();
+                form.style.display = "block";
+            },
+            onFlashDone: async (result: any) => {
+                const resultContainer = document.getElementById("result")!;
+                resultContainer.innerHTML = "";
+
+                const farFaceFrames = result.frames.far_face;
+                const closeFaceFrames = result.frames.close_face;
+                const flashingFrames = result.frames.flashing;
+
+                const frames = [
+                    farFaceFrames[farFaceFrames.length - 1],
+                    closeFaceFrames[closeFaceFrames.length - 1],
+                    ...flashingFrames,
+                ];
+
+                frames.forEach((frame) => {
+                    const img = document.createElement("img");
+                    img.src = `data:image/jpeg;base64,${frame.base64}`;
+                    img.style.width = "150px";
+                    img.style.height = "150px";
+                    resultContainer.appendChild(img);
+                });
+            },
+            frameInterval: parseInt(frameInterval),
+            flashSettings: {
+                framesPerColor: parseInt(framePerColor),
+                colors,
+                delayBetweenColors: parseInt(colorDelay),
+                useFaceDetectorWhenFlashing: useFaceDetector,
+                flashIntensity: parseFloat(flashIntensity),
+            },
+            faceSettings: {
+                minFarFaceRatio: parseFloat(minFarFaceRatio),
+                maxFarFaceRatio: parseFloat(maxFarFaceRatio),
+                closeFaceRatio: parseFloat(closeFaceRatio),
+            },
+            maskSettings: {
+                smallScale: parseFloat(smallScale),
+                largeScale: parseFloat(largeScale),
+            },
+        });
+    }
+
+    const startButton = document.querySelector(".start-button")!;
+    startButton.addEventListener("click", startFaceAuthen);
+</script>
