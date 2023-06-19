@@ -227,12 +227,13 @@ import Layout from "../../layouts/Layout.astro";
     }
 </style>
 
-<script>
+<script>import getBaseUrl from "@/utils/getBaseUrl";
+
     // @ts-ignore
     const tv = new TVWebSDK.SDK({
         container: document.getElementById("container"),
         lang: "vi",
-        assetRoot: "./",
+        assetRoot: getBaseUrl(),
         // assetRoot: "/assets",
         enableAntiDebug: false,
     });

@@ -1,10 +1,13 @@
 ---
+import getBaseUrl from '@/utils/getBaseUrl';
 export interface Props {
 	title: string;
 	sdkUrl?: string;
 }
 
 const { title, sdkUrl } = Astro.props;
+
+const baseUrl = getBaseUrl(sdkUrl);
 ---
 
 <!DOCTYPE html>
@@ -23,7 +26,7 @@ const { title, sdkUrl } = Astro.props;
 			is:inline
 			src="https://unpkg.com/@tsocial/trustvision-sdk@2.10.1/dist/trustvision-sdk.umd.js"
 		></script>
-		<script is:inline src={sdkUrl}></script>
+		<script is:inline src={baseUrl}></script>
 
 	</head>
 	<body>
