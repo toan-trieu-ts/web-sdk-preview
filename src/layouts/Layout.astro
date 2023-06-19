@@ -1,9 +1,10 @@
 ---
 export interface Props {
 	title: string;
+	sdkUrl?: string;
 }
 
-const { title } = Astro.props;
+const { title, sdkUrl } = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -22,6 +23,7 @@ const { title } = Astro.props;
 			is:inline
 			src="https://unpkg.com/@tsocial/trustvision-sdk@2.10.1/dist/trustvision-sdk.umd.js"
 		></script>
+		<script is:inline src={sdkUrl}></script>
 
 	</head>
 	<body>

@@ -2,7 +2,10 @@
 import Layout from "../../layouts/Layout.astro";
 ---
 
-<Layout title="Flash Liveness">
+<Layout
+    title="Flash Liveness"
+    sdkUrl="/sdk/flash-liveness/tvweb-sdk.standalone.min.js"
+>
     <h2>Flash Liveness detection</h2>
     <h3>Build Version: 15th Jun, 2023 - 10:20 PM</h3>
     <div id="container"></div>
@@ -223,9 +226,6 @@ import Layout from "../../layouts/Layout.astro";
         padding: 3px 6px;
     }
 </style>
-
-<script is:inline src="/sdk/flash-liveness/tvweb-sdk.standalone.min.js"
-></script>
 
 <script>
     // @ts-ignore
