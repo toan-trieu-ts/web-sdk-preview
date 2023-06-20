@@ -1,4 +1,6 @@
 <script>
+  import { setKeys } from "@/store/keys";
+
   let keyName = "";
   let inputAccessKey = "";
   let inputSecretKey = "";
@@ -24,6 +26,12 @@
     inputApiUrl = keyParsed[1];
     inputAccessKey = keyParsed[2];
     inputSecretKey = keyParsed[3];
+
+    setKeys({
+      inputApiUrl,
+      inputAccessKey,
+      inputSecretKey,
+    });
 
     keyInputVisible = !keyInputVisible;
   };

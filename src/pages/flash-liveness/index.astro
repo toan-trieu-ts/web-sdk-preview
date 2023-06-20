@@ -228,6 +228,7 @@ import Layout from "../../layouts/Layout.astro";
 
 <script>
     import getBaseUrl from "@/utils/getBaseUrl";
+    import { getKeys } from "@/store/keys";
 
     // @ts-ignore
     const tv = new TVWebSDK.SDK({
@@ -260,15 +261,17 @@ import Layout from "../../layouts/Layout.astro";
         const smallScale = (document.getElementById("small-scale")as HTMLInputElement)?.value;
         const largeScale = (document.getElementById("large-scale")as HTMLInputElement)?.value;
 
+        const { inputAccessKey, inputSecretKey, inputApiUrl } = getKeys();
+
         const form = document.getElementById("content")!;
         form.style.display = "none";
 
         tv.flashLiveness({
-            // apiCredentials: {
-            //     accessKey: inputAccessKey.value,
-            //     secretKey: inputSecretKey.value,
-            //     apiUrl: inputApiUrl.value,
-            // },
+            apiCredentials: {
+                accessKey: inputAccessKey,
+                secretKey: inputSecretKey,
+                apiUrl: inputApiUrl,
+            },
             onDone: () => {
                 tv.destroyView();
                 form.style.display = "block";
