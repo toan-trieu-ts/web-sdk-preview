@@ -1,0 +1,11 @@
+---
+export interface Props {
+    title: string;
+    version: string;
+}
+
+const { title, version } = Astro.props;
+---
+
+<h2>{title}</h2>
+<h3>Build Version: {version}</h3>

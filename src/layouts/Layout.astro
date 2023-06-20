@@ -1,11 +1,14 @@
 ---
+import UpdatedAt from "@/components/UpdatedAt.astro";
 import getBaseUrl from '@/utils/getBaseUrl';
+import InputKeys from '@/components/InputKeys.svelte';
 export interface Props {
 	title: string;
 	sdkUrl?: string;
+	version?: string;
 }
 
-const { title, sdkUrl } = Astro.props;
+const { title, sdkUrl, version } = Astro.props;
 
 const baseUrl = getBaseUrl(sdkUrl);
 ---
@@ -31,6 +34,10 @@ const baseUrl = getBaseUrl(sdkUrl);
 	</head>
 	<body>
 		<noscript>You need to enable JavaScript to run this app.</noscript>
+
+		<UpdatedAt title={title} version={version} />
+
+		<InputKeys client:only="svelte" />
 
 		<slot />
 	</body>

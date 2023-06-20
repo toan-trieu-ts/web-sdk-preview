@@ -5,9 +5,8 @@ import Layout from "../../layouts/Layout.astro";
 <Layout
     title="Flash Liveness"
     sdkUrl="/sdk/flash-liveness/tvweb-sdk.standalone.min.js"
+    version="15th Jun, 2023 - 10:20 PM"
 >
-    <h2>Flash Liveness detection</h2>
-    <h3>Build Version: 15th Jun, 2023 - 10:20 PM</h3>
     <div id="container"></div>
 
     <main id="content">
@@ -48,7 +47,7 @@ import Layout from "../../layouts/Layout.astro";
                 <br />
 
                 <label for="use-face-dectector"
-                    >Use Face Dectecto{">"}gt; when flashing:</label
+                    >Use Face Dectector when flashing:</label
                 >
                 <input id="use-face-dectector" type="checkbox" />
                 <br />
@@ -227,7 +226,8 @@ import Layout from "../../layouts/Layout.astro";
     }
 </style>
 
-<script>import getBaseUrl from "@/utils/getBaseUrl";
+<script>
+    import getBaseUrl from "@/utils/getBaseUrl";
 
     // @ts-ignore
     const tv = new TVWebSDK.SDK({
