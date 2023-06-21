@@ -1,0 +1,605 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout
+    title="SDK Adapter"
+    version="14 Jun 16:00"
+    sdkUrl="/sdk/simplify-integration/tvweb-sdk.standalone.min.js"
+>
+    <div style="display: none; margin-top: 10px;">
+        <label>
+            Cached User ID
+            <input id="user-id" readonly style="width: 300px" />
+        </label>
+        <button onclick="
+        clearUserId()
+        "
+            >Clear user id (x-request-id)</button
+        >
+    </div>
+
+    <div id="container"></div>
+
+    <div id="content">
+        <h4>Full flow (import keys before start)</h4>
+        <div>
+            Liveness mode:
+            <select id="select-mode-fullflow"></select>
+            <br />
+            <button id="btn-start-fullflow" style="margin: 10px 0">
+                Full flow
+            </button>
+            <button class="collapsible_fullflow">Sample code</button>
+            <div class="content_fullflow">
+                <pre>
+        <code>
+          {`
+          const apiClient = new trustvisionSdk.default(
+            accessKey, secretKey, apiUrl, { httpHeaders: { 'x-request-id': your x-request-id }}
+          );
+          // override interfaces
+          const uploadImageSimp = async (params) => {
+            return apiClient.uploadImage(params);
+          };
+          const uploadFilesSimp = async (params) => {
+            return apiClient.fileService.request(params);
+          };
+          const requestVerifyIDCardSimp = async (params) => {
+            return apiClient.requestVerifyIDCard(params);
+          };
+          const detectIDTamperingSimp = async (params) => {
+            return apiClient.detectIDTampering(params);
+          };
+          const readIDCardSimp = async (params) => {
+            return apiClient.readIDCard(params);
+          };
+          const requestVerifyPortraitSimp = async (params) => {
+            return apiClient.requestVerifyPortrait(params);
+          };
+          const verifyFaceLivenessSimp = async (params) => {
+            return apiClient.verifyFaceLiveness(params);
+          };
+          const compareFacesSimp = async (params) => {
+            return apiClient.compareFaces(params);
+          };
+          const searchFacesSimp = async (params) => {
+            return apiClient.searchFaces(params);
+          };
+          const indexFacesSimp = async (params) => {
+            return apiClient.indexFaces(params);
+          };
+
+          class MyAdapter extends TVWebSDK.SDKAdapter {
+            async uploadImage(params) {
+              const result = await uploadImageSimp(params);
+              return result;
+            }
+        
+            async uploadFiles(params) {
+              const result = await uploadFilesSimp(params);
+              return result;
+            }
+        
+            async requestVerifyIDCard(params) {
+              const result = await requestVerifyIDCardSimp(params);
+              return result;
+            }
+        
+            async detectIDTampering(params) {
+              const result = await detectIDTamperingSimp(params);
+              return result;
+            }
+        
+            async readIDCard(params) {
+              const result = await readIDCardSimp(params);
+              return result;
+            }
+            
+            async requestVerifyPortrait(params) {
+              const result = await requestVerifyPortraitSimp(params);
+              return result;
+            }
+        
+            async verifyFaceLiveness(params) {
+              const result = await verifyFaceLivenessSimp(params);
+              return result;
+          }
+           
+            async compareFaces(params) {
+              const result = await compareFacesSimp(params);
+              return result;
+            }
+        
+            async searchFaces(params) {
+              const result = await searchFacesSimp(params);
+              return result;
+            }
+        
+            async indexFaces(params) {
+              const result = await indexFacesSimp(params);
+              return result;
+            }  
+          }
+          const adapter = new MyAdapter();
+          
+          // then pass adapter to ekycFullFlow
+          tv.ekycFullFlow({
+            sdkAdapter: adapter,
+            livenessDetectionProps: {
+              mode: livenessDetectionMode,
+            },
+            readIDCardProps: {},
+            onDoneEkyc: console.log,
+            onError: console.log,
+            onClose: () => { tv.destroyView(); },
+          });
+          `}
+        </code>
+      </pre>
+            </div>
+            <div
+                id="fullflow-loading"
+                style="padding-top: 10px; display: none;"
+            >
+                Api checking
+                <div class="dot-windmill"></div>
+            </div>
+            <div id="result-fullflow"></div>
+
+            <div class="tables">
+                <table class="result_table" id="summary_table">
+                    <tbody id="result-tbody"></tbody>
+                </table>
+
+                <table class="result_table" id="ocr_table">
+                    <tbody id="ocr-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+        <br />
+    </div>
+</Layout>
+
+<style>
+    .collapsible_fullflow {
+        cursor: pointer;
+        padding: 8px;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 16px;
+        display: block;
+    }
+
+    .content_fullflow {
+        padding: 0 18px;
+        display: none;
+        overflow: hidden;
+        border: 1px solid #f1f1f1;
+    }
+
+    .result_table {
+        border: 1px solid #000;
+        display: none;
+    }
+    .tables {
+        display: flex;
+        justify-content: space-around;
+    }
+</style>
+
+<script>
+    // @ts-nocheck
+    import { getKeys } from "@/store/keys";
+
+    let listObjUrls = [];
+
+    function createObjectURL(blob) {
+        const objUrl = URL.createObjectURL(blob);
+        listObjUrls.push(objUrl);
+        return objUrl;
+    }
+
+    function revokeObjectURL() {
+        if (listObjUrls.length === 0) return;
+        listObjUrls.map((item) => URL.revokeObjectURL(item));
+        listObjUrls = [];
+    }
+
+    const tv = new TVWebSDK.SDK({
+        container: document.getElementById("container"),
+        lang: "vi",
+        assetRoot: "https://unpkg.com/@tsocial/tvweb-sdk@latest/assets",
+        enableAntiDebug: false,
+    });
+    window.tv = tv;
+    tv.runPreloadEKYCResources();
+    const resultFullFlowEl = document.getElementById("result-fullflow");
+
+    const selectModeFullFlowEl = document.getElementById(
+        "select-mode-fullflow"
+    );
+
+    // SDK ADAPTER
+    function create_UUID() {
+        var dt = new Date().getTime();
+        var uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+            /[xy]/g,
+            function (c) {
+                var r = (dt + Math.random() * 16) % 16 | 0;
+                dt = Math.floor(dt / 16);
+                return (c == "x" ? r : (r & 0x3) | 0x8).toString(16);
+            }
+        );
+        return uuid;
+    }
+    let xRequestId;
+    if (localStorage.getItem("user-id")) {
+        xRequestId = JSON.parse(localStorage.getItem("user-id"));
+    } else {
+        xRequestId = create_UUID();
+        localStorage.setItem("user-id", JSON.stringify(xRequestId));
+    }
+
+    const userIdEl = document.getElementById("user-id");
+
+    const summaryTable = document.getElementById("summary_table");
+    const ocrTable = document.getElementById("ocr_table");
+    const tbodyEl = document.getElementById("result-tbody");
+    const ocrTbodyEl = document.getElementById("ocr-tbody");
+
+    userIdEl.value = JSON.parse(localStorage.getItem("user-id"));
+
+    Object.keys(TVWebSDK.Constants.Mode).forEach((k) => {
+        const option = document.createElement("option");
+        option.appendChild(document.createTextNode(k));
+        option.setAttribute("value", TVWebSDK.Constants.Mode[k]);
+        selectModeFullFlowEl.appendChild(option);
+    });
+
+    function clearUserId() {
+        window.localStorage.removeItem("user-id");
+        userIdEl.value = JSON.parse(localStorage.getItem("user-id"));
+    }
+
+    function startFullFlow() {
+        const { inputAccessKey, inputSecretKey, inputApiUrl } = getKeys();
+        const apiClient = new trustvisionSdk.default(
+            inputAccessKey,
+            inputSecretKey,
+            inputApiUrl,
+            { httpHeaders: { "x-request-id": xRequestId } }
+        );
+        const getClientSettingsSimp = async () => {
+            return apiClient.clientSettings();
+        };
+        const uploadImageSimp = async (params) => {
+            return apiClient.uploadImage(params);
+        };
+        const uploadFilesSimp = async (params) => {
+            return apiClient.fileService.request(params);
+        };
+        const requestVerifyIDCardSimp = async (params) => {
+            return apiClient.requestVerifyIDCard(params);
+        };
+        const detectIDTamperingSimp = async (params) => {
+            return apiClient.detectIDTampering(params);
+        };
+        const readIDCardSimp = async (params) => {
+            return apiClient.readIDCard(params);
+        };
+        const requestVerifyPortraitSimp = async (params) => {
+            return apiClient.requestVerifyPortrait(params);
+        };
+        const verifyFaceLivenessSimp = async (params) => {
+            return apiClient.verifyFaceLiveness(params);
+        };
+        const compareFacesSimp = async (params) => {
+            return apiClient.compareFaces(params);
+        };
+        const searchFacesSimp = async (params) => {
+            return apiClient.searchFaces(params);
+        };
+        const indexFacesSimp = async (params) => {
+            return apiClient.indexFaces(params);
+        };
+        class MyAdapter extends TVWebSDK.SDKAdapter {
+            async clientSettings() {
+                const result = await getClientSettingsSimp();
+                return result;
+            }
+
+            async uploadImage(params) {
+                const result = await uploadImageSimp(params);
+                return result;
+            }
+
+            async uploadFiles(params) {
+                const result = await uploadFilesSimp(params);
+                return result;
+            }
+
+            async requestVerifyIDCard(params) {
+                const result = await requestVerifyIDCardSimp(params);
+                return result;
+            }
+
+            async detectIDTampering(params) {
+                const result = await detectIDTamperingSimp(params);
+                return result;
+            }
+
+            async readIDCard(params) {
+                const result = await readIDCardSimp(params);
+                return result;
+            }
+
+            async requestVerifyPortrait(params) {
+                const result = await requestVerifyPortraitSimp(params);
+                return result;
+            }
+
+            async verifyFaceLiveness(params) {
+                const result = await verifyFaceLivenessSimp(params);
+                return result;
+            }
+
+            async compareFaces(params) {
+                const result = await compareFacesSimp(params);
+                return result;
+            }
+
+            async searchFaces(params) {
+                const result = await searchFacesSimp(params);
+                return result;
+            }
+
+            async indexFaces(params) {
+                const result = await indexFacesSimp(params);
+                return result;
+            }
+        }
+        const adapter = new MyAdapter();
+        revokeObjectURL();
+        resultFullFlowEl.innerHTML = "";
+        tbodyEl.innerHTML = null;
+        ocrTbodyEl.innerHTML = null;
+        const livenessDetectionMode = selectModeFullFlowEl.value;
+        document.body.style.height = 0;
+        tv.ekycFullFlow({
+            logCredentials: {
+                enable: false,
+            },
+            sdkAdapter: adapter,
+            livenessDetectionProps: {
+                mode: livenessDetectionMode,
+                apiCheck: false,
+                captureFrameSettings: {
+                    enable: true,
+                    framesIntervalTime: 180,
+                    framesBatchLength: 10,
+                },
+            },
+            onDoneEkyc: (result) =>
+                handleFullFlowDone(result, resultFullFlowEl),
+            onError: (e) => {
+                console.log("on error", e);
+                // resultFullFlowEl.appendChild(renderjson(e));
+                tv.destroyView();
+                document.body.style.height = "auto";
+            },
+            onClose: () => {
+                document.body.style.height = "auto";
+                tv.destroyView();
+            },
+        });
+    }
+
+    function getSimplifyResult(ekycResult) {
+        const results = [];
+        if (_.get(ekycResult, "frontCard.apiResult.sanityResult")) {
+            results.push({
+                label: `frontCard - sanity`,
+                value:
+                    _.get(
+                        ekycResult,
+                        "frontCard.apiResult.sanityResult.card_sanity.verdict",
+                        ""
+                    ) === "good",
+            });
+        }
+        if (_.get(ekycResult, "frontCard.apiResult.tamperingInfo")) {
+            results.push({
+                label: `frontCard - tampering`,
+                value:
+                    _.get(
+                        ekycResult,
+                        "frontCard.apiResult.tamperingInfo.card_tampering.verdict",
+                        ""
+                    ) === "good",
+            });
+        }
+        if (_.get(ekycResult, "frontCard.apiResult.cardInfo")) {
+            results.push({
+                label: `frontCard - OCR_status`,
+                value:
+                    _.get(
+                        ekycResult,
+                        "frontCard.apiResult.cardInfo.status",
+                        ""
+                    ) === "success",
+            });
+        }
+
+        if (_.get(ekycResult, "backCard.apiResult.sanityResult")) {
+            results.push({
+                label: `backCard - sanity`,
+                value:
+                    _.get(
+                        ekycResult,
+                        "backCard.apiResult.sanityResult.card_sanity.verdict",
+                        ""
+                    ) === "good",
+            });
+        }
+        if (_.get(ekycResult, "backCard.apiResult.tamperingInfo")) {
+            results.push({
+                label: `backCard - tampering`,
+                value:
+                    _.get(
+                        ekycResult,
+                        "backCard.apiResult.tamperingInfo.card_tampering.verdict",
+                        ""
+                    ) === "good",
+            });
+        }
+        if (_.get(ekycResult, "backCard.apiResult.cardInfo")) {
+            results.push({
+                label: `backCard - OCR_status`,
+                value:
+                    _.get(
+                        ekycResult,
+                        "backCard.apiResult.cardInfo.status",
+                        ""
+                    ) === "success",
+            });
+        }
+
+        if (_.get(ekycResult, "faceLiveness.verifyFacePortraitResult")) {
+            results.push({
+                label: "portrait_sanity",
+                value:
+                    _.get(
+                        ekycResult,
+                        "faceLiveness.verifyFacePortraitResult.portrait_sanity.verdict",
+                        ""
+                    ) === "good",
+            });
+        }
+        if (_.get(ekycResult, "faceLiveness.verifyFaceLivenessResult")) {
+            results.push({
+                label: "face_liveness",
+                value: _.get(
+                    ekycResult,
+                    "faceLiveness.verifyFaceLivenessResult.is_live",
+                    false
+                ),
+            });
+        }
+
+        if (_.get(ekycResult, "compareFaces", null)) {
+            const compareArrays = _.get(
+                ekycResult,
+                "compareFaces.compare_faces",
+                []
+            );
+
+            results.push({
+                label: "compare_faces",
+                value: !(
+                    compareArrays[0]?.result !== "matched" ||
+                    compareArrays.filter((item) => item?.result === "matched")
+                        .length !== 1 ||
+                    _.get(ekycResult, "compareFaces.errors", null)
+                ),
+            });
+        }
+        if (_.get(ekycResult, "searchFaces", null)) {
+            results.push({
+                label: "search_faces",
+                value: !_.get(ekycResult, "searchFaces.faces", null),
+            });
+        }
+        if (_.get(ekycResult, "indexFaces", null)) {
+            results.push({
+                label: "index_faces",
+                value: _.get(ekycResult, "indexFaces.status", "") === "success",
+            });
+        }
+        return results;
+    }
+
+    function getCardOCR(ekycResult) {
+        const frontCardInfo = _.get(
+            ekycResult,
+            "frontCard.apiResult.cardInfo.card_information",
+            []
+        );
+        const backCardInfo = _.get(
+            ekycResult,
+            "backCard.apiResult.cardInfo.card_information",
+            []
+        );
+        const result = [...frontCardInfo, ...backCardInfo]?.map(
+            ({ field, value }) => ({ field, value })
+        );
+        return result;
+    }
+
+    function handleFullFlowDone(ekycResult, element) {
+        tv.destroyView();
+        // element.innerHTML = "";
+
+        // element.appendChild(document.createElement("br"));
+        // element.appendChild(document.createTextNode("Ekyc Full Flow Result:\n"));
+        // element.appendChild(
+        //   renderjson(ekycResult)
+        // );
+        const resultArr = getSimplifyResult(ekycResult);
+        if (resultArr && resultArr.length > 0) {
+            console.log({ ekycResult, resultArr });
+            summaryTable.style.display = "block";
+
+            resultArr.forEach((item, index) => {
+                const row = document.createElement("tr");
+                const cell1 = document.createElement("td");
+                const cell2 = document.createElement("td");
+
+                cell1.textContent = item.value ? "\u2705" : "\u274C"; // Checkmark or Cross symbol
+                cell2.textContent = item.label;
+
+                row.appendChild(cell1);
+                row.appendChild(cell2);
+                tbodyEl.appendChild(row);
+            });
+        }
+
+        const ocrArr = getCardOCR(ekycResult);
+        if (ocrArr && ocrArr.length > 0) {
+            ocrTable.style.display = "block";
+            ocrArr.forEach((item, index) => {
+                const row = document.createElement("tr");
+                const cell1 = document.createElement("td");
+                const cell2 = document.createElement("td");
+
+                cell1.textContent = item.field;
+                cell2.textContent = item.value;
+                row.appendChild(cell1);
+                row.appendChild(cell2);
+                ocrTbodyEl.appendChild(row);
+            });
+        }
+    }
+
+    const startButton = document.getElementById("btn-start-fullflow");
+    startButton?.addEventListener("click", startFullFlow);
+</script>
+
+<script>
+    // @ts-nocheck
+    // fullFlow
+    const collapseFullFlowBtn = document.querySelector(".collapsible_fullflow");
+    const contentFullFlow = document.querySelector(".content_fullflow");
+
+    collapseFullFlowBtn.addEventListener("click", function () {
+        if (
+            contentFullFlow.style.display === "none" ||
+            !contentFullFlow.style.display
+        ) {
+            contentFullFlow.style.display = "block";
+        } else {
+            contentFullFlow.style.display = "none";
+        }
+    });
+</script>
